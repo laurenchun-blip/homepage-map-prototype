@@ -275,8 +275,9 @@
     <!-- Load data files -->
     <script src="cluster-cities.js"></script>
     <script src="signs-data.js"></script>
+
     <script>
-      // ===== Map Setup =====
+      // ===== MAP SETUP =====
       const map = new maplibregl.Map({
         container: "map",
         style: {
@@ -294,13 +295,7 @@
               attribution: "&copy; OpenStreetMap contributors",
             },
           },
-          layers: [
-            {
-              id: "osm",
-              type: "raster",
-              source: "osm",
-            },
-          ],
+          layers: [{ id: "osm", type: "raster", source: "osm" }],
         },
         center: [-98.35, 39.5],
         zoom: 4,
@@ -308,7 +303,7 @@
 
       map.addControl(new maplibregl.NavigationControl());
 
-      // ===== Build GeoJSON Sources =====
+      // ===== DATA SOURCES =====
       const cityClusterGeoJSON = {
         type: "FeatureCollection",
         features: CLUSTER_CITIES.map((c) => ({
@@ -337,128 +332,127 @@
         })),
       };
 
-      // ===== Add Layers Once Map Loads =====
+      // ===== MAP LOAD =====
       map.on("load", () => {
-        // --- City overview clusters (pink bubbles) ---
-        if (!map.getSource("cityClusters")) {
-          map.addSource("cityClusters", {
-            type: "geojson",
-            data: cityClusterGeoJSON,
-          });
-        }
+        const marker = new Image(24, 24);
+        marker.onload = () => map.addImage("marker-15", marker);
+        marker.src =
+          "data:image/svg+xml;charset=utf-8," +
+          encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+        <circle cx="12" cy="12" r="6" fill="#ff3e86" stroke="#ffffff" stroke-width="2" />
+      </svg>
+    `);
+        // --- City Bubbles (DMA clusters) ---
+        map.addSource("cityClusters", {
+          type: "geojson",
+          data: cityClusterGeoJSON,
+        });
 
-        if (!map.getLayer("city-bubbles")) {
-          map.addLayer({
-            id: "city-bubbles",
-            type: "circle",
-            source: "cityClusters",
-            paint: {
-              "circle-color": "#ff3e86",
-              "circle-radius": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                3,
-                18,
-                6,
-                28,
-                8,
-                38,
-                10,
-                48,
-                12,
-                56,
-              ],
-              "circle-stroke-color": "#fff",
-              "circle-stroke-width": 2,
-              "circle-opacity": 0.9,
-            },
-          });
-        }
+        map.addLayer({
+          id: "city-bubbles",
+          type: "circle",
+          source: "cityClusters",
+          paint: {
+            "circle-color": "#ff3e86",
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              3,
+              18,
+              6,
+              28,
+              8,
+              38,
+              //   10,
+              //   48,
+              //   12,
+              //   56,
+            ],
+            "circle-stroke-color": "#fff",
+            "circle-stroke-width": 2,
+            "circle-opacity": 0.9,
+          },
+        });
 
-        if (!map.getLayer("city-count")) {
-          map.addLayer({
-            id: "city-count",
-            type: "symbol",
-            source: "cityClusters",
-            layout: {
-              "text-field": ["get", "count"],
-              "text-size": 16,
-              "text-font": ["Open Sans Regular"],
-            },
-            paint: { "text-color": "#fff" },
-          });
-        }
+        map.addLayer({
+          id: "city-count",
+          type: "symbol",
+          source: "cityClusters",
+          layout: {
+            "text-field": ["get", "count"],
+            "text-size": 16,
+            "text-font": ["Open Sans Regular"],
+          },
+          paint: {
+            "text-color": "#fff",
+            "text-halo-color": "#ff3e86",
+            "text-halo-width": 1.5,
+          },
+        });
 
-        // --- Sign data (local clusters + points) ---
-        if (!map.getSource("signs")) {
-          map.addSource("signs", {
-            type: "geojson",
-            data: signGeoJSON,
-            cluster: true,
-            clusterMaxZoom: 18,
-            clusterRadius: 40,
-          });
-        }
+        // --- Signs (Local Billboard Clusters) ---
+        map.addSource("signs", {
+          type: "geojson",
+          data: signGeoJSON,
+          cluster: true,
+          clusterMaxZoom: 18,
+          clusterRadius: 40,
+        });
 
-        if (!map.getLayer("sign-clusters")) {
-          map.addLayer({
-            id: "sign-clusters",
-            type: "circle",
-            source: "signs",
-            filter: ["has", "point_count"],
-            paint: {
-              "circle-color": "#fca5d3",
-              "circle-radius": [
-                "step",
-                ["get", "point_count"],
-                12,
-                10,
-                18,
-                30,
-                25,
-              ],
-              "circle-opacity": 0.9,
-            },
-            layout: { visibility: "none" },
-          });
-        }
+        map.addLayer({
+          id: "sign-clusters",
+          type: "circle",
+          source: "signs",
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-color": "#fca5d3",
+            "circle-radius": [
+              "step",
+              ["get", "point_count"],
+              10,
+              10,
+              16,
+              30,
+              24,
+            ],
+            "circle-opacity": 0.9,
+          },
+          layout: { visibility: "none" },
+        });
 
-        if (!map.getLayer("sign-count")) {
-          map.addLayer({
-            id: "sign-count",
-            type: "symbol",
-            source: "signs",
-            filter: ["has", "point_count"],
-            layout: {
-              "text-field": ["get", "point_count_abbreviated"],
-              "text-size": 12,
-              "text-font": ["Open Sans Regular"],
-              visibility: "none",
-            },
-            paint: {
-              "text-color": "#fff",
-              "text-halo-color": "#ff3e86",
-              "text-halo-width": 1.5,
-            },
-          });
-        }
+        map.addLayer({
+          id: "sign-count",
+          type: "symbol",
+          source: "signs",
+          filter: ["has", "point_count"],
+          layout: {
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 12,
+            "text-font": ["Open Sans Regular"],
+            visibility: "none",
+          },
+          paint: {
+            "text-color": "#fff",
+            "text-halo-color": "#f472b6",
+            "text-halo-width": 1.5,
+          },
+        });
 
-        if (!map.getLayer("sign-points")) {
-          map.addLayer({
-            id: "sign-points",
-            type: "symbol",
-            source: "signs",
-            filter: ["!", ["has", "point_count"]],
-            layout: {
-              "icon-image": "marker-15",
-              "icon-size": 1,
-              visibility: "none",
-            },
-          });
-        }
+        map.addLayer({
+          id: "sign-points",
+          type: "symbol",
+          source: "signs",
+          filter: ["!", ["has", "point_count"]],
+          layout: {
+            "icon-image": "marker-15",
+            "icon-size": 1,
+            visibility: "none",
+          },
+        });
 
-        // ===== Hover + Click Preview for City Bubbles =====
+        // ===== POPUP LOGIC FOR CITY CLUSTERS =====
         let activePopup = null;
         let popupLocked = false;
 
@@ -470,14 +464,19 @@
 
           const coords = feature.geometry.coordinates.slice();
           const cityName = feature.properties.name;
-
-          // From CLUSTER_CITIES
           const city = CLUSTER_CITIES.find(
             (c) => c.name.toLowerCase() === cityName.toLowerCase()
           );
           if (!city) return;
 
           const title = `${city.venue} in ${city.name}`;
+          const popupHTML = `
+        <div class="popup">
+          <img src="${city.img}" alt="${city.venue}">
+          <strong>${title}</strong><br/>
+          <a href="#" target="_blank" class="cta">Log in to get started</a>
+        </div>
+      `;
 
           activePopup = new maplibregl.Popup({
             offset: 25,
@@ -485,26 +484,18 @@
             closeOnClick: false,
           })
             .setLngLat(coords)
-            .setHTML(
-              `
-      <div class="popup">
-        <img src="${city.img}" alt="${city.venue}">
-        <strong>${title}</strong><br/>
-        <a href="#" target="_blank" class="cta">Log in to get started</a>
-      </div>
-    `
-            )
+            .setHTML(popupHTML)
             .addTo(map);
         }
 
-        // Hover shows preview (unless popup locked)
+        // Hover → preview
         map.on("mouseenter", "city-bubbles", (e) => {
           if (popupLocked) return;
           map.getCanvas().style.cursor = "pointer";
           showClusterPreview(e.features[0]);
         });
 
-        // Mouseleave hides (unless locked)
+        // Mouseleave → hide
         map.on("mouseleave", "city-bubbles", () => {
           map.getCanvas().style.cursor = "";
           if (!popupLocked && activePopup) {
@@ -513,13 +504,13 @@
           }
         });
 
-        // Click locks popup open
+        // Click → lock popup
         map.on("click", "city-bubbles", (e) => {
           showClusterPreview(e.features[0]);
           popupLocked = true;
         });
 
-        // Click elsewhere closes popup
+        // Click elsewhere → close popup
         map.on("click", (e) => {
           const features = map.queryRenderedFeatures(e.point, {
             layers: ["city-bubbles"],
@@ -531,28 +522,7 @@
           }
         });
 
-        // ===== Zoom Switch Between Clusters and Signs =====
-        const ZOOM_SWITCH = 12;
-
-        function safeSetVisibility(id, visibility) {
-          if (map.getLayer(id)) {
-            map.setLayoutProperty(id, "visibility", visibility);
-          }
-        }
-
-        map.on("zoom", () => {
-          const zoom = map.getZoom();
-          const showSigns = zoom > ZOOM_SWITCH;
-
-          safeSetVisibility("city-bubbles", showSigns ? "none" : "visible");
-          safeSetVisibility("city-count", showSigns ? "none" : "visible");
-
-          safeSetVisibility("sign-clusters", showSigns ? "visible" : "none");
-          safeSetVisibility("sign-count", showSigns ? "visible" : "none");
-          safeSetVisibility("sign-points", showSigns ? "visible" : "none");
-        });
-
-        // ===== Click Popup for Individual Signs =====
+        // ===== POPUP FOR INDIVIDUAL SIGNS =====
         map.on("click", "sign-points", (e) => {
           const p = e.features[0].properties;
           new maplibregl.Popup({ offset: 20 })
@@ -568,9 +538,28 @@
             )
             .addTo(map);
         });
+
+        // ===== ZOOM SWITCH BETWEEN LEVELS =====
+        const ZOOM_SWITCH = 11;
+        function safeSetVisibility(id, visibility) {
+          if (map.getLayer(id))
+            map.setLayoutProperty(id, "visibility", visibility);
+        }
+
+        map.on("zoom", () => {
+          const zoom = map.getZoom();
+          const showSigns = zoom > ZOOM_SWITCH;
+          //   console.log("Zoom:", map.getZoom(), "=> showSigns:", showSigns);
+
+          safeSetVisibility("city-bubbles", showSigns ? "none" : "visible");
+          safeSetVisibility("city-count", showSigns ? "none" : "visible");
+          safeSetVisibility("sign-clusters", showSigns ? "visible" : "none");
+          safeSetVisibility("sign-count", showSigns ? "visible" : "none");
+          safeSetVisibility("sign-points", showSigns ? "visible" : "none");
+        });
       });
 
-      // ===== City Search Function =====
+      // ===== CITY SEARCH =====
       function searchCity() {
         const input = document
           .getElementById("search")
@@ -578,12 +567,11 @@
           .toLowerCase();
         const coords = CITY_CENTERS[input];
         if (coords) {
-          map.flyTo({ center: coords, zoom: 9, speed: 0.7 });
+          map.flyTo({ center: coords, zoom: 10, speed: 0.7 });
         } else {
           alert("City not found in cluster-cities.js list.");
         }
       }
-
       document.getElementById("search").addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchCity();
       });
