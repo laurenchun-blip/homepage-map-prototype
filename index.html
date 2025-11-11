@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Map Prototype - Discover Locations</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        background-color: #f7f9fc;
+        color: #223;
+      }
+      section {
+        max-width: 1000px;
+        margin: 40px auto;
+        text-align: center;
+      }
+      h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #24355a;
+      }
+      p {
+        color: #5f6a7a;
+        margin-bottom: 16px;
+      }
+      #map {
+        height: 550px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+      }
+      .search-box {
+        position: absolute;
+        z-index: 1000;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        padding: 6px 10px;
+        align-items: center;
+      }
+      .search-box input {
+        border: none;
+        outline: none;
+        padding: 8px 10px;
+        width: 250px;
+        font-size: 14px;
+      }
+      .search-box button {
+        background: #3056d3;
+        border: none;
+        color: #fff;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .leaflet-popup-content {
+        text-align: center;
+      }
+      .preview-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .preview-card img {
+        width: 200px;
+        height: 100px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-bottom: 8px;
+      }
+      .cta-btn {
+        background: #007bff;
+        color: #fff;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <h2>Discover Locations To Reach Your Next Customer</h2>
+      <p>
+        Appear locally or nationwide. Select screens in your desired markets
+        with your target audience.
+      </p>
+      <div class="search-box">
+        <input
+          id="search"
+          type="text"
+          placeholder="Enter a city or zip code..."
+        />
+        <button onclick="searchCity()">Search</button>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+      // Initialize map
+      const map = L.map("map").setView([39.5, -98.35], 4);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      // Bubble clusters (state/DMA-level)
+      const bubbles = [
+        {
+          name: "Texas",
+          coords: [31, -99],
+          count: 546,
+          img: "https://picsum.photos/200/100?1",
+        },
+        {
+          name: "California",
+          coords: [36, -119],
+          count: 165,
+          img: "https://picsum.photos/200/100?2",
+        },
+        {
+          name: "New York",
+          coords: [40.6369364, -73.9863898],
+          count: 32,
+          img: "assets/NY-209702.jpg",
+        },
+        {
+          name: "Florida",
+          coords: [27.8, -81.7],
+          count: 422,
+          img: "https://picsum.photos/200/100?4",
+        },
+        {
+          name: "Illinois",
+          coords: [40, -89],
+          count: 320,
+          img: "https://picsum.photos/200/100?5",
+        },
+      ];
+
+      bubbles.forEach((b) => {
+        const circle = L.circleMarker(b.coords, {
+          radius: Math.log(b.count) * 4,
+          fillColor: "#e64a7b",
+          color: "#e64a7b",
+          fillOpacity: 0.7,
+          weight: 1,
+        }).addTo(map);
+
+        circle.bindPopup(`
+        <div class="preview-card">
+          <img src="${b.img}" alt="${b.name}">
+          <strong>${b.name}</strong><br/>
+          <a href="#" class="cta-btn">Log in to get started</a>
+        </div>
+      `);
+      });
+
+      // Example detailed pins for city zoom
+      const chicagoPins = [
+        { coords: [41.8781, -87.6298], name: "Billboard 1 - Chicago Loop" },
+        { coords: [41.894, -87.635], name: "Billboard 2 - River North" },
+        { coords: [41.85, -87.65], name: "Billboard 3 - Pilsen" },
+      ];
+
+      function showCityPins(city) {
+        chicagoPins.forEach((p) => {
+          L.marker(p.coords)
+            .addTo(map)
+            .bindPopup(
+              `<strong>${p.name}</strong><br/><a href="#" class="cta-btn">View Details</a>`
+            );
+        });
+      }
+
+      // Simple geocoding search
+      async function searchCity() {
+        const city = document.getElementById("search").value;
+        if (!city) return;
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${city}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && data[0]) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          map.setView([lat, lon], 10);
+          if (city.toLowerCase().includes("chicago")) {
+            showCityPins(city);
+          }
+        } else {
+          alert("City not found. Try another search.");
+        }
+      }
+    </script>
+  </body>
+</html>
