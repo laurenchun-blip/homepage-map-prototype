@@ -1,212 +1,349 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Map Prototype - Discover Locations</title>
+    <title>Discover Locations – Map Section</title>
+
     <link
+      href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css"
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
+    <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
+
     <style>
+      :root {
+        --pink: #ff3e86;
+        --light-pink: #fca5d3;
+        --cta: #3056d3;
+        --ink: #1b1c20;
+        --muted: #5f6a7a;
+        --bg: #f7f9fc;
+      }
+
       body {
-        font-family: "Inter", sans-serif;
         margin: 0;
-        background-color: #f7f9fc;
-        color: #223;
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--ink);
+        background-color: var(--bg);
       }
-      section {
-        max-width: 1000px;
-        margin: 40px auto;
+
+      section.map-section {
+        padding: 60px 24px;
         text-align: center;
+        max-width: 1200px;
+        margin: 0 auto;
       }
-      h2 {
-        font-size: 1.8rem;
+
+      section.map-section h2 {
+        font-size: 2rem;
         font-weight: 700;
-        color: #24355a;
+        margin-bottom: 8px;
+        color: var(--ink);
       }
-      p {
-        color: #5f6a7a;
-        margin-bottom: 16px;
+
+      section.map-section p {
+        color: var(--muted);
+        max-width: 700px;
+        margin: 0 auto 28px;
+        font-size: 1rem;
+        line-height: 1.5;
       }
-      #map {
-        height: 550px;
-        border-radius: 12px;
+
+      .map-container {
+        position: relative;
+        height: 560px;
+        border-radius: 16px;
+        overflow: hidden;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        margin-top: 20px;
       }
+
+      #map {
+        height: 100%;
+        width: 100%;
+        border-radius: 16px;
+      }
+
       .search-box {
         position: absolute;
-        z-index: 1000;
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
-        display: flex;
+        z-index: 2;
         background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        padding: 6px 10px;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+        display: flex;
+        gap: 8px;
+        padding: 8px 10px;
         align-items: center;
       }
+
       .search-box input {
         border: none;
         outline: none;
-        padding: 8px 10px;
-        width: 250px;
         font-size: 14px;
+        width: 250px;
       }
+
       .search-box button {
-        background: #3056d3;
-        border: none;
+        background: var(--cta);
         color: #fff;
+        border: none;
         padding: 8px 14px;
-        border-radius: 6px;
+        border-radius: 8px;
         cursor: pointer;
+        font-weight: 500;
       }
-      .leaflet-popup-content {
+
+      .popup {
+        font-size: 14px;
         text-align: center;
       }
-      .preview-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      .preview-card img {
+      .popup img {
         width: 200px;
         height: 100px;
-        border-radius: 8px;
         object-fit: cover;
-        margin-bottom: 8px;
-      }
-      .cta-btn {
-        background: #007bff;
-        color: #fff;
-        border: none;
-        padding: 6px 12px;
         border-radius: 6px;
-        cursor: pointer;
+        margin-bottom: 6px;
+      }
+      .popup .cta {
+        display: inline-block;
+        background: var(--cta);
+        color: #fff;
         text-decoration: none;
-        font-size: 14px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-top: 4px;
       }
     </style>
   </head>
   <body>
-    <section>
+    <section class="map-section">
       <h2>Discover Locations To Reach Your Next Customer</h2>
       <p>
         Appear locally or nationwide. Select screens in your desired markets
         with your target audience.
       </p>
-      <div class="search-box">
-        <input
-          id="search"
-          type="text"
-          placeholder="Enter a city or zip code..."
-        />
-        <button onclick="searchCity()">Search</button>
+
+      <div class="map-container">
+        <div class="search-box">
+          <input
+            id="search"
+            type="text"
+            placeholder="Enter a city (e.g. New York, Chicago)"
+          />
+          <button onclick="searchCity()">Search</button>
+        </div>
+        <div id="map"></div>
       </div>
-      <div id="map"></div>
     </section>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="signs-data.js"></script>
     <script>
-      // Initialize map
-      const map = L.map("map").setView([39.5, -98.35], 4);
+      // Convert SIGN_DATA to GeoJSON
+      const geojson = {
+        type: "FeatureCollection",
+        features: SIGN_DATA.map((s) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [s.coords[1], s.coords[0]] },
+          properties: {
+            city: s.city,
+            venue: s.venue,
+            img: s.img,
+            href: s.href,
+          },
+        })),
+      };
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(map);
-
-      // Bubble clusters (state/DMA-level)
-      const bubbles = [
-        {
-          name: "Texas",
-          coords: [31, -99],
-          count: 546,
-          img: "https://picsum.photos/200/100?1",
+      // Initialize MapLibre map
+      const map = new maplibregl.Map({
+        container: "map",
+        style: {
+          version: 8,
+          sources: {
+            osm: {
+              type: "raster",
+              tiles: [
+                "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution: "&copy; OpenStreetMap contributors",
+            },
+          },
+          layers: [{ id: "osm", type: "raster", source: "osm" }],
         },
-        {
-          name: "California",
-          coords: [36, -119],
-          count: 165,
-          img: "https://picsum.photos/200/100?2",
-        },
-        {
-          name: "New York",
-          coords: [40.6369364, -73.9863898],
-          count: 32,
-          img: "assets/NY-209702.jpg",
-        },
-        {
-          name: "Florida",
-          coords: [27.8, -81.7],
-          count: 422,
-          img: "https://picsum.photos/200/100?4",
-        },
-        {
-          name: "Illinois",
-          coords: [40, -89],
-          count: 320,
-          img: "https://picsum.photos/200/100?5",
-        },
-      ];
-
-      bubbles.forEach((b) => {
-        const circle = L.circleMarker(b.coords, {
-          radius: Math.log(b.count) * 4,
-          fillColor: "#e64a7b",
-          color: "#e64a7b",
-          fillOpacity: 0.7,
-          weight: 1,
-        }).addTo(map);
-
-        circle.bindPopup(`
-        <div class="preview-card">
-          <img src="${b.img}" alt="${b.name}">
-          <strong>${b.name}</strong><br/>
-          <a href="#" class="cta-btn">Log in to get started</a>
-        </div>
-      `);
+        center: [-98.35, 39.5],
+        zoom: 4,
       });
 
-      // Example detailed pins for city zoom
-      const chicagoPins = [
-        { coords: [41.8781, -87.6298], name: "Billboard 1 - Chicago Loop" },
-        { coords: [41.894, -87.635], name: "Billboard 2 - River North" },
-        { coords: [41.85, -87.65], name: "Billboard 3 - Pilsen" },
-      ];
+      map.addControl(new maplibregl.NavigationControl());
 
-      function showCityPins(city) {
-        chicagoPins.forEach((p) => {
-          L.marker(p.coords)
-            .addTo(map)
-            .bindPopup(
-              `<strong>${p.name}</strong><br/><a href="#" class="cta-btn">View Details</a>`
-            );
+      map.on("load", () => {
+        map.addSource("signs", {
+          type: "geojson",
+          data: geojson,
+          cluster: true,
+          clusterMaxZoom: 18,
+          clusterRadius: 60,
         });
-      }
 
-      // Simple geocoding search
-      async function searchCity() {
-        const city = document.getElementById("search").value;
-        if (!city) return;
+        // DMA-level clusters (≤ zoom 12)
+        map.addLayer({
+          id: "dma-clusters",
+          type: "circle",
+          source: "signs",
+          filter: ["all", ["has", "point_count"], ["<=", ["zoom"], 12]],
+          paint: {
+            "circle-color": "#ff3e86",
+            "circle-radius": [
+              "step",
+              ["get", "point_count"],
+              20,
+              10,
+              30,
+              50,
+              40,
+            ],
+            "circle-opacity": 0.85,
+          },
+        });
 
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${city}`;
-        const res = await fetch(url);
-        const data = await res.json();
+        map.addLayer({
+          id: "dma-count",
+          type: "symbol",
+          source: "signs",
+          filter: ["all", ["has", "point_count"], ["<=", ["zoom"], 12]],
+          layout: {
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 14,
+            "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+          },
+          paint: { "text-color": "#fff" },
+        });
 
-        if (data && data[0]) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
-          map.setView([lat, lon], 10);
-          if (city.toLowerCase().includes("chicago")) {
-            showCityPins(city);
-          }
+        // Smaller clusters (> zoom 12)
+        map.addLayer({
+          id: "local-clusters",
+          type: "circle",
+          source: "signs",
+          filter: ["all", ["has", "point_count"], [">", ["zoom"], 12]],
+          paint: {
+            "circle-color": "#fca5d3",
+            "circle-radius": [
+              "step",
+              ["get", "point_count"],
+              12,
+              10,
+              18,
+              30,
+              25,
+            ],
+            "circle-opacity": 0.85,
+          },
+        });
+
+        map.addLayer({
+          id: "local-count",
+          type: "symbol",
+          source: "signs",
+          filter: ["all", ["has", "point_count"], [">", ["zoom"], 12]],
+          layout: {
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 12,
+            "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+          },
+          paint: { "text-color": "#fff" },
+        });
+
+        // Preview popup on DMA clusters
+        map.on("click", "dma-clusters", (e) => {
+          const cluster = map.queryRenderedFeatures(e.point, {
+            layers: ["dma-clusters"],
+          })[0];
+          const clusterId = cluster.properties.cluster_id;
+          const source = map.getSource("signs");
+
+          source.getClusterLeaves(clusterId, 5, 0, (err, leaves) => {
+            if (err || !leaves.length) return;
+            const p =
+              leaves[Math.floor(Math.random() * leaves.length)].properties;
+            const coords = cluster.geometry.coordinates;
+
+            new maplibregl.Popup({ offset: 20 })
+              .setLngLat(coords)
+              .setHTML(
+                `
+              <div class="popup">
+                <img src="${p.img}" alt="${p.venue}">
+                <strong>${p.city}</strong><br/>
+                <a href="${p.href}" target="_blank" class="cta">Log in to get started</a>
+              </div>
+            `
+              )
+              .addTo(map);
+          });
+        });
+
+        // Click on local clusters → zoom deeper
+        map.on("click", "local-clusters", (e) => {
+          const cluster = map.queryRenderedFeatures(e.point, {
+            layers: ["local-clusters"],
+          })[0];
+          const clusterId = cluster.properties.cluster_id;
+          map
+            .getSource("signs")
+            .getClusterExpansionZoom(clusterId, (err, zoom) => {
+              if (err) return;
+              map.easeTo({ center: cluster.geometry.coordinates, zoom });
+            });
+        });
+
+        // Cursor styles
+        ["dma-clusters", "local-clusters"].forEach((layer) => {
+          map.on(
+            "mouseenter",
+            layer,
+            () => (map.getCanvas().style.cursor = "pointer")
+          );
+          map.on(
+            "mouseleave",
+            layer,
+            () => (map.getCanvas().style.cursor = "")
+          );
+        });
+      });
+
+      // Offline mock search
+      const cityCenters = {
+        "new york": [-74.006, 40.7128],
+        chicago: [-87.6298, 41.8781],
+        dallas: [-96.797, 32.7767],
+        houston: [-95.3698, 29.7604],
+        "los angeles": [-118.2437, 34.0522],
+        miami: [-80.1918, 25.7617],
+      };
+
+      function searchCity() {
+        const input = document
+          .getElementById("search")
+          .value.trim()
+          .toLowerCase();
+        const coords = cityCenters[input];
+        if (coords) {
+          map.flyTo({ center: coords, zoom: 9, speed: 0.7 });
         } else {
-          alert("City not found. Try another search.");
+          alert(
+            "City not found. Try New York, Chicago, Dallas, Houston, LA, Miami."
+          );
         }
       }
+
+      document.getElementById("search").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchCity();
+      });
     </script>
   </body>
 </html>
