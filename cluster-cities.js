@@ -84,7 +84,7 @@ const CLUSTER_CITIES = [
     coords: [-112.074, 33.4484],
     count: 50,
     venue: "Billboard",
-    img: "https://images.unsplash.com/photo-1590608897129-79da98d159c8?w=400",
+    img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-5bsvan-resized.jpg",
   },
   {
     name: "Orlando",
@@ -98,7 +98,7 @@ const CLUSTER_CITIES = [
     coords: [-115.1398, 36.1699],
     count: 40,
     venue: "Casino Display",
-    img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400",
+    img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-u5e7q3-resized.jpg",
   },
   {
     name: "Portland",
@@ -111,15 +111,15 @@ const CLUSTER_CITIES = [
     name: "Boston",
     coords: [-71.0589, 42.3601],
     count: 90,
-    venue: "Transit Station",
-    img: "https://images.unsplash.com/photo-1523875194681-bedd468c58bf?w=400",
+    venue: "Billboard",
+    img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-52yu2c-resized.jpg",
   },
   {
     name: "Philadelphia",
     coords: [-75.1652, 39.9526],
     count: 85,
     venue: "Pharmacy",
-    img: "https://images.unsplash.com/photo-1586099840923-42d64ef2c4f3?w=400",
+    img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-9bh4n8-resized.jpg",
   },
   {
     name: "Minneapolis",

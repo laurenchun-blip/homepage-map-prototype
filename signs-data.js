@@ -31,8 +31,8 @@ const SIGN_DATA = [
   { city: "Denver", venue: "Cherry Creek Retail Ad", coords: [39.718, -104.952], img: "https://images.unsplash.com/photo-1565538810643-1c1e08b34e5f?w=400", href: "#" },
 
   // --- Salt Lake City ---
-  { city: "Salt Lake City", venue: "City Creek Center Billboard", coords: [40.768, -111.892], img: "https://images.unsplash.com/photo-1585392960139-85528b3faec0?w=400", href: "#" },
-  { city: "Salt Lake City", venue: "University District Ad", coords: [40.760, -111.847], img: "https://images.unsplash.com/photo-1585386959984-a4155223f9e4?w=400", href: "#" },
+  { city: "Salt Lake City", venue: "City Creek Center Billboard", coords: [40.768, -111.892], img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-4xdhkx-resized.jpg", href: "#" },
+  { city: "Salt Lake City", venue: "University District Ad", coords: [40.760, -111.847], img: "https://blipboards-bb-storage.s3.amazonaws.com/lambda-images/sign-photos/resized/SignPhoto-4xdhkx-resized.jpg", href: "#" },
 
   // --- Seattle ---
   { city: "Seattle", venue: "Downtown Transit Billboard", coords: [47.6062, -122.3321], img: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=400", href: "#" },
